@@ -100,7 +100,7 @@ public class CurvaEliptica {
      * @return una lista de los puntos generados de P.
      * @throws IllegalArgumentException si el punto P no pertenece a la curva.
      */
-    private List<Punto> genera(Punto p){
+    public List<Punto> genera(Punto p){
 
     }
 
