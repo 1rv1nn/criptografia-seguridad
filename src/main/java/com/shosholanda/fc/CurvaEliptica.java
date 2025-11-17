@@ -27,7 +27,9 @@ public class CurvaEliptica {
      * la construcción:  4a³ + 27b² != 0
      */
     public CurvaEliptica(){
-
+      this.a = 1;
+      this.b = 1;
+      this.primo = 3;
     }
 
     /**
@@ -38,7 +40,14 @@ public class CurvaEliptica {
      * @throws IllegalArgumentException si no es una curva válida.
      */
     public CurvaEliptica(int a, int b, int primo){
-
+        if (primo <= 3 || !Funciones.esPrimo(primo))
+            throw new IllegalArgumentException("El primo debe ser mayor que 3 y primo");
+        long discr = 4L * a * a * a + 27L * b * b;
+        if (discr == 0)
+            throw new IllegalArgumentException("Curva singular (discriminante 0)");
+        this.a = a;
+        this.b = b;
+        this.primo = primo;
     }
     
     /**
@@ -46,7 +55,7 @@ public class CurvaEliptica {
      * @return el coeficiente A de esta curva elíptica.
      */
     public int getA(){
-
+      return this.a;
     }
     
     /**
@@ -54,7 +63,7 @@ public class CurvaEliptica {
      * @return el coeficiente B de esta curva elíptica.
      */
     public int getB(){
-
+      return this.b;
     }
 
     /**
@@ -62,7 +71,7 @@ public class CurvaEliptica {
      * @return el primo relacionado a esta curva elíptica.
      */
     public int getPrimo(){
-
+      return this.primo;
     }
     
     /**
@@ -72,7 +81,8 @@ public class CurvaEliptica {
      * @return si el punto pertenece o no a la curva.
      */
     public boolean pertenece(Punto p){
-
+      if (p == null) return true;
+      return pertenece(p.getX(), p.getY());
     }
 
     /**
@@ -80,7 +90,9 @@ public class CurvaEliptica {
      * la curva
      */
     private boolean pertenece(int x, int y){
-
+        int lhs = Funciones.modulo(y * y, this.primo);
+        int rhs = Funciones.modulo((x * x * x + this.a * x + this.b), this.primo);
+        return lhs == rhs;
     }
 
 
@@ -89,7 +101,16 @@ public class CurvaEliptica {
      * @return todos los puntos (a, b) que cumplen la congruencia
      */
     public List<Punto> puntos(){
-
+        List<Punto> lista = new ArrayList<>();
+        for (int x = 0; x < this.primo; x++){
+            for (int y = 0; y < this.primo; y++){
+                if (pertenece(x, y))
+                    lista.add(new Punto(x, y));
+            }
+        }
+        // Punto al infinito representado por null
+        lista.add(null);
+        return lista;
     }
 
 
