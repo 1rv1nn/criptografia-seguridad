@@ -18,7 +18,8 @@ public class Punto {
      * Construye un punto con valores iniciales (0, 0)
      */
     public Punto(){
-
+    this.x = 0;
+    this.y = 0;
     }
 
     /**
@@ -27,7 +28,8 @@ public class Punto {
      * @param y la coordenada en y del punto.
      */
     public Punto(int x, int y){
-
+    this.x = x;
+    this.y = y; 
     }
 
     /**
@@ -35,7 +37,7 @@ public class Punto {
      * @return la coordenada en X de este punto.
      */
     public int getX(){
-
+    return this.x;  
     }
 
     /**
@@ -43,6 +45,7 @@ public class Punto {
      * @return la coordenada en Y de este punto.
      */
     public int getY(){
+    return this.y;
 
     }
 
@@ -52,7 +55,8 @@ public class Punto {
      * @param y la nueva coordenada en Y de este punto.
      */
     public void set(int x, int y){
-
+    this.x = x;
+    this.y = y;
     }
 
     /**
@@ -60,7 +64,7 @@ public class Punto {
      * @return una copia de este punto.
      */
     public Punto copia(){
-
+    return new Punto(this.x, this.y);
     }
 	
 
@@ -70,7 +74,7 @@ public class Punto {
      */
     @Override
     public String toString(){
-
+    return "(" + this.x + ", " + this.y + ")";
     }
 
 
@@ -81,7 +85,10 @@ public class Punto {
      */
     @Override
     public boolean equals(Object o){
-
+    if (this == o) return true;
+    if (!(o instanceof Punto)) return false;
+    Punto punto = (Punto) o;
+    return this.x == punto.x && this.y == punto.y;
     }
 
 }
