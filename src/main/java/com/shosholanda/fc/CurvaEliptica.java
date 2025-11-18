@@ -122,7 +122,21 @@ public class CurvaEliptica {
      * @throws IllegalArgumentException si el punto P no pertenece a la curva.
      */
     public List<Punto> genera(Punto p){
-
+        if (!pertenece(p))
+            throw new IllegalArgumentException("El punto no pertenece a la curva");
+        List<Punto> lista = new ArrayList<>();
+        if (p == null){
+            lista.add(null);
+            return lista;
+        }
+        Punto cur = p;
+        // Generamos p, 2p, 3p, ... hasta llegar al infinito
+        while (cur != null){
+            lista.add(cur);
+            cur = suma(p, cur);
+        }
+        lista.add(null);
+        return lista;
     }
 
 
@@ -135,7 +149,42 @@ public class CurvaEliptica {
      * @throws IllegalArgumentException si p o q no son parte de la curva.
      */
     public Punto suma(Punto p, Punto q){
+        // Identidad
+        if (p == null) return q;
+        if (q == null) return p;
 
+        if (!pertenece(p) || !pertenece(q))
+            throw new IllegalArgumentException("Alguno de los puntos no pertenece a la curva");
+
+        int x1 = Funciones.modulo(p.getX(), this.primo);
+        int y1 = Funciones.modulo(p.getY(), this.primo);
+        int x2 = Funciones.modulo(q.getX(), this.primo);
+        int y2 = Funciones.modulo(q.getY(), this.primo);
+
+        // Si x1 == x2 y y1 == -y2 modulo p => suma infinito
+        if (x1 == x2 && y1 == Funciones.modulo(-y2, this.primo))
+            return null;
+
+        int lambda;
+        if (x1 == x2 && y1 == y2){
+            // Duplicación:  lambda = (3*x1^2 + a) / (2*y1)
+            if (y1 == 0)
+                return null;
+            int num = Funciones.modulo(3 * x1 * x1 + this.a, this.primo);
+            int den = Funciones.modulo(2 * y1, this.primo);
+            int inv = Funciones.inversoMultiplicativo(den, this.primo);
+            lambda = Funciones.modulo(num * inv, this.primo);
+        } else {
+            // Punto distinto: lambda = (y2 - y1) / (x2 - x1)
+            int num = Funciones.modulo(y2 - y1, this.primo);
+            int den = Funciones.modulo(x2 - x1, this.primo);
+            int inv = Funciones.inversoMultiplicativo(den, this.primo);
+            lambda = Funciones.modulo(num * inv, this.primo);
+        }
+
+        int xr = Funciones.modulo(lambda * lambda - x1 - x2, this.primo);
+        int yr = Funciones.modulo(lambda * (x1 - xr) - y1, this.primo);
+        return new Punto(xr, yr);
     }
 
 
