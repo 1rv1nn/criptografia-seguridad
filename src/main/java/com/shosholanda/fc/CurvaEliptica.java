@@ -1,7 +1,7 @@
 package com.shosholanda.fc;
 
-import java.util.List;
 import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Clase que crea una curva elíptica usando un campo finito módulo
@@ -196,7 +196,28 @@ public class CurvaEliptica {
      * @return el resultado de k*P (suma multiple).
      */
     public Punto multiplicacion(int k, Punto p){
+        if (p == null)
+            return null; // Punto al infinito
+        if (!pertenece(p))
+            throw new IllegalArgumentException("El punto no pertenece a la curva");
+        if (k == 0)
+            return p; // Convención usada en las pruebas
 
+        boolean negativo = k < 0;
+        long escalar = Math.abs((long) k);
+
+        Punto resultado = null;
+        Punto acumulador = p;
+        while (escalar > 0){
+            if ((escalar & 1) == 1){
+                resultado = suma(resultado, acumulador);
+            }
+            acumulador = suma(acumulador, acumulador);
+            escalar >>= 1;
+        }
+        if (negativo)
+            return inverso(resultado);
+        return resultado;
     }
 
 
@@ -211,7 +232,17 @@ public class CurvaEliptica {
      * @throws IllegalArgumentException si el punto p no pertenece a la cuva.
      */
     public int orden(Punto p){
-
+        if (!pertenece(p))
+            throw new IllegalArgumentException("El punto no pertenece a la curva");
+        if (p == null)
+            return Integer.MAX_VALUE; // Infinito
+        Punto cur = p;
+        int orden = 1;
+        while (cur != null){
+            cur = suma(cur, p);
+            orden++;
+        }
+        return orden;
     }
  
     /**
@@ -222,7 +253,11 @@ public class CurvaEliptica {
      * @return el cofactor de este punto P en la curva.
      */
     public double cofactor(Punto p){
-
+        int ordenP = orden(p);
+        if (ordenP == 0)
+            throw new IllegalArgumentException("El orden del punto es 0");
+        int totalPuntos = puntos().size();
+        return (double) totalPuntos / (double) ordenP;
     }
     
 
@@ -232,7 +267,7 @@ public class CurvaEliptica {
      */
     @Override
     public String toString(){
-
+        return String.format("y² ≡ x³ + %dx + %d   mod %d", this.a, this.b, this.primo);
     }
 
     /**
@@ -242,7 +277,10 @@ public class CurvaEliptica {
      */
     @Override
     public boolean equals(Object o){
-
+        if (this == o) return true;
+        if (!(o instanceof CurvaEliptica)) return false;
+        CurvaEliptica ce = (CurvaEliptica) o;
+        return this.a == ce.a && this.b == ce.b && this.primo == ce.primo;
     }
 
 
@@ -253,7 +291,10 @@ public class CurvaEliptica {
      * @return el punto inverso de p.
      */
     private Punto inverso(Punto p){
-
+        if (p == null) return null;
+        int x = p.getX();
+        int y = Funciones.modulo(-p.getY(), this.primo);
+        return new Punto(x, y);
     }
 	
 }
