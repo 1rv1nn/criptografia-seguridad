@@ -1,7 +1,7 @@
 package com.shosholanda.fc;
 
-import java.util.List;
 import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Clase que crea una curva elíptica usando un campo finito módulo
@@ -27,7 +27,9 @@ public class CurvaEliptica {
      * la construcción:  4a³ + 27b² != 0
      */
     public CurvaEliptica(){
-
+      this.a = 1;
+      this.b = 1;
+      this.primo = 3;
     }
 
     /**
@@ -38,7 +40,14 @@ public class CurvaEliptica {
      * @throws IllegalArgumentException si no es una curva válida.
      */
     public CurvaEliptica(int a, int b, int primo){
-
+        if (primo <= 3 || !Funciones.esPrimo(primo))
+            throw new IllegalArgumentException("El primo debe ser mayor que 3 y primo");
+        long discr = 4L * a * a * a + 27L * b * b;
+        if (discr == 0)
+            throw new IllegalArgumentException("Curva singular (discriminante 0)");
+        this.a = a;
+        this.b = b;
+        this.primo = primo;
     }
     
     /**
@@ -46,7 +55,7 @@ public class CurvaEliptica {
      * @return el coeficiente A de esta curva elíptica.
      */
     public int getA(){
-
+      return this.a;
     }
     
     /**
@@ -54,7 +63,7 @@ public class CurvaEliptica {
      * @return el coeficiente B de esta curva elíptica.
      */
     public int getB(){
-
+      return this.b;
     }
 
     /**
@@ -62,7 +71,7 @@ public class CurvaEliptica {
      * @return el primo relacionado a esta curva elíptica.
      */
     public int getPrimo(){
-
+      return this.primo;
     }
     
     /**
@@ -72,7 +81,8 @@ public class CurvaEliptica {
      * @return si el punto pertenece o no a la curva.
      */
     public boolean pertenece(Punto p){
-
+      if (p == null) return true;
+      return pertenece(p.getX(), p.getY());
     }
 
     /**
@@ -80,7 +90,9 @@ public class CurvaEliptica {
      * la curva
      */
     private boolean pertenece(int x, int y){
-
+        int lhs = Funciones.modulo(y * y, this.primo);
+        int rhs = Funciones.modulo((x * x * x + this.a * x + this.b), this.primo);
+        return lhs == rhs;
     }
 
 
@@ -89,7 +101,16 @@ public class CurvaEliptica {
      * @return todos los puntos (a, b) que cumplen la congruencia
      */
     public List<Punto> puntos(){
-
+        List<Punto> lista = new ArrayList<>();
+        for (int x = 0; x < this.primo; x++){
+            for (int y = 0; y < this.primo; y++){
+                if (pertenece(x, y))
+                    lista.add(new Punto(x, y));
+            }
+        }
+        // Punto al infinito representado por null
+        lista.add(null);
+        return lista;
     }
 
 
@@ -101,7 +122,21 @@ public class CurvaEliptica {
      * @throws IllegalArgumentException si el punto P no pertenece a la curva.
      */
     public List<Punto> genera(Punto p){
-
+        if (!pertenece(p))
+            throw new IllegalArgumentException("El punto no pertenece a la curva");
+        List<Punto> lista = new ArrayList<>();
+        if (p == null){
+            lista.add(null);
+            return lista;
+        }
+        Punto cur = p;
+        // Generamos p, 2p, 3p, ... hasta llegar al infinito
+        while (cur != null){
+            lista.add(cur);
+            cur = suma(p, cur);
+        }
+        lista.add(null);
+        return lista;
     }
 
 
@@ -114,7 +149,42 @@ public class CurvaEliptica {
      * @throws IllegalArgumentException si p o q no son parte de la curva.
      */
     public Punto suma(Punto p, Punto q){
+        // Identidad
+        if (p == null) return q;
+        if (q == null) return p;
 
+        if (!pertenece(p) || !pertenece(q))
+            throw new IllegalArgumentException("Alguno de los puntos no pertenece a la curva");
+
+        int x1 = Funciones.modulo(p.getX(), this.primo);
+        int y1 = Funciones.modulo(p.getY(), this.primo);
+        int x2 = Funciones.modulo(q.getX(), this.primo);
+        int y2 = Funciones.modulo(q.getY(), this.primo);
+
+        // Si x1 == x2 y y1 == -y2 modulo p => suma infinito
+        if (x1 == x2 && y1 == Funciones.modulo(-y2, this.primo))
+            return null;
+
+        int lambda;
+        if (x1 == x2 && y1 == y2){
+            // Duplicación:  lambda = (3*x1^2 + a) / (2*y1)
+            if (y1 == 0)
+                return null;
+            int num = Funciones.modulo(3 * x1 * x1 + this.a, this.primo);
+            int den = Funciones.modulo(2 * y1, this.primo);
+            int inv = Funciones.inversoMultiplicativo(den, this.primo);
+            lambda = Funciones.modulo(num * inv, this.primo);
+        } else {
+            // Punto distinto: lambda = (y2 - y1) / (x2 - x1)
+            int num = Funciones.modulo(y2 - y1, this.primo);
+            int den = Funciones.modulo(x2 - x1, this.primo);
+            int inv = Funciones.inversoMultiplicativo(den, this.primo);
+            lambda = Funciones.modulo(num * inv, this.primo);
+        }
+
+        int xr = Funciones.modulo(lambda * lambda - x1 - x2, this.primo);
+        int yr = Funciones.modulo(lambda * (x1 - xr) - y1, this.primo);
+        return new Punto(xr, yr);
     }
 
 
@@ -126,7 +196,28 @@ public class CurvaEliptica {
      * @return el resultado de k*P (suma multiple).
      */
     public Punto multiplicacion(int k, Punto p){
+        if (p == null)
+            return null; // Punto al infinito
+        if (!pertenece(p))
+            throw new IllegalArgumentException("El punto no pertenece a la curva");
+        if (k == 0)
+            return p; // Convención usada en las pruebas
 
+        boolean negativo = k < 0;
+        long escalar = Math.abs((long) k);
+
+        Punto resultado = null;
+        Punto acumulador = p;
+        while (escalar > 0){
+            if ((escalar & 1) == 1){
+                resultado = suma(resultado, acumulador);
+            }
+            acumulador = suma(acumulador, acumulador);
+            escalar >>= 1;
+        }
+        if (negativo)
+            return inverso(resultado);
+        return resultado;
     }
 
 
@@ -141,7 +232,17 @@ public class CurvaEliptica {
      * @throws IllegalArgumentException si el punto p no pertenece a la cuva.
      */
     public int orden(Punto p){
-
+        if (!pertenece(p))
+            throw new IllegalArgumentException("El punto no pertenece a la curva");
+        if (p == null)
+            return Integer.MAX_VALUE; // Infinito
+        Punto cur = p;
+        int orden = 1;
+        while (cur != null){
+            cur = suma(cur, p);
+            orden++;
+        }
+        return orden;
     }
  
     /**
@@ -152,7 +253,11 @@ public class CurvaEliptica {
      * @return el cofactor de este punto P en la curva.
      */
     public double cofactor(Punto p){
-
+        int ordenP = orden(p);
+        if (ordenP == 0)
+            throw new IllegalArgumentException("El orden del punto es 0");
+        int totalPuntos = puntos().size();
+        return (double) totalPuntos / (double) ordenP;
     }
     
 
@@ -162,7 +267,7 @@ public class CurvaEliptica {
      */
     @Override
     public String toString(){
-
+        return String.format("y² ≡ x³ + %dx + %d   mod %d", this.a, this.b, this.primo);
     }
 
     /**
@@ -172,7 +277,10 @@ public class CurvaEliptica {
      */
     @Override
     public boolean equals(Object o){
-
+        if (this == o) return true;
+        if (!(o instanceof CurvaEliptica)) return false;
+        CurvaEliptica ce = (CurvaEliptica) o;
+        return this.a == ce.a && this.b == ce.b && this.primo == ce.primo;
     }
 
 
@@ -183,7 +291,10 @@ public class CurvaEliptica {
      * @return el punto inverso de p.
      */
     private Punto inverso(Punto p){
-
+        if (p == null) return null;
+        int x = p.getX();
+        int y = Funciones.modulo(-p.getY(), this.primo);
+        return new Punto(x, y);
     }
 	
 }
